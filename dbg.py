@@ -53,10 +53,12 @@ class dbg :
     
     def contbreaklog(self, pid) :
         #get $rip
-        rip = (c_uint64 * 64)()
+        rip = (c_long * 64)()
         print(self.c.ptrace(12, pid, 0, addressof(rip)))
         print "$rip:"
         print rip[16]
+        for i in range(0, 18):
+            print rip[i]
         #print self.d
         if (self.d.has_key(rip[16] - 1)) :
             print "addr value:"
