@@ -21,16 +21,26 @@ from ctypes import *
 class dbg :
     def __init__(self) :
         print "bla bla bla"
-        self.c=CDLL("/lib/x86_64-linux-gnu/libc.so.6")
-        self.c.ptrace.restype=c_uint64
-        self.c.ptrace.argtypes=[c_uint64,c_uint64,c_uint64,c_uint64]
+        self.c=CDLL("/lib/x86_64-linux-gnu/libc.so.6", use_errno=True)
+        self.c.ptrace.restype=c_long
+        self.c.ptrace.argtypes=[c_long,c_long,c_long,c_long]
+        self.c.waitpid.argtypes=[c_long,c_long,c_long]
         self.d = {}
         self.latest = 0
     
     def attach(self, pid) :
-        print(self.c.ptrace(16, pid, 0 ,0))
-        # print(self.c.waitpid(-pid,0,0))
-        print(self.c.ptrace(0x4200, pid, 0, 14))
+        r=self.c.ptrace(16, pid, 0 ,0)
+        print(r)
+        if(r == -1):
+            print get_errno()
+        r=self.c.waitpid(pid,0,0x40000000)
+        print(r)
+        if(r == -1):
+            print get_errno()
+        r=self.c.ptrace(0x4200, pid, 0, 14)
+        print r
+        if(r == -1):
+            print get_errno()
     
     def detach(self, pid) :
         print(self.c.ptrace(17, pid, 0, 0))
@@ -64,7 +74,7 @@ class dbg :
             self.latest = rip[16]
     
     def wait(self, pid) :
-        curth = self.c.waitpid(-pid,0,0)
+        curth = self.c.waitpid(pid,0,0x40000000)
         if(curth > 0 & curth < 9000) :
             return curth
         return 0
