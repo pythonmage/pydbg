@@ -1,5 +1,5 @@
 #    pydbg 
-#    Copyright (C) 2016 pythonmage
+#    Copyright (C) 2016-2017 pythonmage
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,11 +17,12 @@
 
 
 from ctypes import *
+import ctypes.util
 
 class dbg :
     def __init__(self) :
-        print "bla bla bla"
-        self.c=CDLL("/lib/x86_64-linux-gnu/libc.so.6", use_errno=True)
+        print "initializing the puthon debugger"
+        self.c=CDLL(ctypes.util.find_library("c"), use_errno=True)
         self.c.ptrace.restype=c_long
         self.c.ptrace.argtypes=[c_long,c_long,c_long,c_long]
         self.c.waitpid.argtypes=[c_long,c_long,c_long]
