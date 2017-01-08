@@ -49,32 +49,32 @@ class dbg :
     def startbreak(self, pid, di) :
         self.d = di;
         for k in self.d.keys() :
-            print(self.c.ptrace(4,pid, k, (self.d[k] & 0xffffffffffffff00) | 0x00000000000000cc))
+            print(self.c.ptrace(4,pid, k, (self.d[k] & 0xffffffff00000000) | 0x00000000fedeffe7))
     
     def contbreaklog(self, pid) :
         #get $rip
         rip = (c_long * 64)()
         print(self.c.ptrace(12, pid, 0, addressof(rip)))
         print "$rip:"
-        print rip[16]
+        print rip[15]
         for i in range(0, 18):
             print rip[i]
         #print self.d
-        if (self.d.has_key(rip[16] - 1)) :
+        if (self.d.has_key(rip[15])) :
             print "addr value:"
-            print self.d[rip[16] - 1]
-            print(self.c.ptrace(1, pid, rip[16]-1, 0))
+            print self.d[rip[15]]
+            print(self.c.ptrace(1, pid, rip[15], 0))
             if (self.latest > 0) :
                 if (self.d.has_key(self.latest)) :
                     print "poke at latest val:"
-                    print (self.d[self.latest] & 0xffffffffffffff00) | 0x00000000000000cc
-                    print(self.c.ptrace(4,pid,self.latest,(self.d[self.latest] & 0xffffffffffffff00) | 0x00000000000000cc))
+                    print (self.d[self.latest] & 0xffffffff00000000) | 0x00000000fedeffe7
+                    print(self.c.ptrace(4,pid,self.latest,(self.d[self.latest] & 0xffffffff00000000) | 0x00000000fedeffe7))
             print "remove breakpoint text"
-            print(self.c.ptrace(4,pid,rip[16]-1,self.d[rip[16] - 1]))
+            print(self.c.ptrace(4,pid,rip[15],self.d[rip[15]]))
             print "decrement rip"
-            rip[16] = rip[16] - 1
+            rip[15] = rip[15]
             print(self.c.ptrace(13,pid,0,addressof(rip)))
-            self.latest = rip[16]
+            self.latest = rip[15]
     
     def wait(self, pid) :
         curth = self.c.waitpid(pid,0,0x40000000)
@@ -88,5 +88,6 @@ class dbg :
             if (self.curthread > 0) :
                 self.contbreaklog(self.curthread)
                 print(self.c.ptrace(7,self.curthread,0,0))
-            print(self.c.ptrace(7,pid,0,0))
+            else :
+                print(self.c.ptrace(7,pid,0,0))
 
