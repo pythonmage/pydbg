@@ -21,13 +21,17 @@ import ctypes.util
 
 class dbg :
     def __init__(self) :
-        print "initializing the puthon debugger"
+        print "initializing the python debugger"
         self.c=CDLL(ctypes.util.find_library("c"), use_errno=True)
         self.c.ptrace.restype=c_long
         self.c.ptrace.argtypes=[c_long,c_long,c_long,c_long]
         self.c.waitpid.argtypes=[c_long,c_long,c_long]
         self.d = {}
         self.latest = 0
+        self.arch="armv7"
+        self.pc_offset = 16
+        if self.arch == "armv7":
+            self.pc_offset = 15
     
     def attach(self, pid) :
         r=self.c.ptrace(16, pid, 0 ,0)
@@ -46,35 +50,49 @@ class dbg :
     def detach(self, pid) :
         print(self.c.ptrace(17, pid, 0, 0))
     
-    def startbreak(self, pid, di) :
+    def setBreakpoint(pid, address, wordAtAddress) :
+        if self.arch == "armv7":
+            return self.c.ptrace(4,pid, address, (wordAtAddress & 0xffffffff00000000) | 0x00000000fedeffe7)
+        else:
+            return self.c.ptrace(4,pid, address, (wordAtAddress & 0xffffffffffffff00) | 0x00000000000000cc)
+    
+    def clearBreakpoint(pid, address) :
+        self.c.ptrace(4,pid,address,self.d[address])
+    
+    def setAllBreakpoints(self, pid, di) :
         self.d = di;
         for k in self.d.keys() :
-            print(self.c.ptrace(4,pid, k, (self.d[k] & 0xffffffff00000000) | 0x00000000fedeffe7))
+            print(self.setBreakpoint(pid, k, self.d[k]))
     
     def contbreaklog(self, pid) :
-        #get $rip
-        rip = (c_long * 64)()
-        print(self.c.ptrace(12, pid, 0, addressof(rip)))
-        print "$rip:"
-        print rip[15]
+        #get reg_set
+        reg_set = (c_long * 64)()
+        print(self.c.ptrace(12, pid, 0, addressof(reg_set)))
+        print "$ip:"
+        print reg_set[self.pc_offset]
         for i in range(0, 18):
-            print rip[i]
-        #print self.d
-        if (self.d.has_key(rip[15])) :
+            print reg_set[i]
+        #find $ip in self.d dictionary
+        if (self.d.has_key(reg_set[self.pc_offset])) :
             print "addr value:"
-            print self.d[rip[15]]
-            print(self.c.ptrace(1, pid, rip[15], 0))
+            print self.d[reg_set[self.pc_offset]]
+            print(self.c.ptrace(1, pid, reg_set[self.pc_offset], 0))
+            #re-add latest breakpoint at address self.latest. It was cleared at the previous continue.
             if (self.latest > 0) :
                 if (self.d.has_key(self.latest)) :
                     print "poke at latest val:"
                     print (self.d[self.latest] & 0xffffffff00000000) | 0x00000000fedeffe7
                     print(self.c.ptrace(4,pid,self.latest,(self.d[self.latest] & 0xffffffff00000000) | 0x00000000fedeffe7))
-            print "remove breakpoint text"
-            print(self.c.ptrace(4,pid,rip[15],self.d[rip[15]]))
-            print "decrement rip"
-            rip[15] = rip[15]
-            print(self.c.ptrace(13,pid,0,addressof(rip)))
-            self.latest = rip[15]
+            #clear breakpoint and continue
+            print "remove breakpoint text near $ip"
+            print(self.c.ptrace(4,pid,reg_set[self.pc_offset],self.d[reg_set[self.pc_offset]]))
+            print "decrement $ip"
+            if self.arch == "x86" or self.arch =="x86_64":
+                reg_set[self.pc_offset] = reg_set[self.pc_offset] - 1
+            print(self.c.ptrace(13,pid,0,addressof(reg_set)))
+            self.latest = reg_set[self.pc_offset]
+            print "continue"
+            print(self.c.ptrace(7,pid,0,0))
     
     def wait(self, pid) :
         curth = self.c.waitpid(pid,0,0x40000000)
@@ -87,7 +105,6 @@ class dbg :
             self.curthread = self.wait(pid)
             if (self.curthread > 0) :
                 self.contbreaklog(self.curthread)
-                print(self.c.ptrace(7,self.curthread,0,0))
             else :
                 print(self.c.ptrace(7,pid,0,0))
 
