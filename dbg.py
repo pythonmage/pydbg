@@ -31,6 +31,7 @@ class dbg :
         self.arch="armv7"
         self.pc_offset = 16
         if self.arch == "armv7":
+            print("Arch is " + self.arch)
             self.pc_offset = 15
     
     def attach(self, pid) :
@@ -50,7 +51,7 @@ class dbg :
     def detach(self, pid) :
         print(self.c.ptrace(17, pid, 0, 0))
     
-    def setBreakpoint(pid, address, wordAtAddress) :
+    def setBreakpoint(self, pid, address, wordAtAddress) :
         if self.arch == "armv7":
             return self.c.ptrace(4,pid, address, (wordAtAddress & 0xffffffff00000000) | 0x00000000fedeffe7)
         else:
@@ -68,15 +69,15 @@ class dbg :
         #get reg_set
         reg_set = (c_long * 64)()
         print(self.c.ptrace(12, pid, 0, addressof(reg_set)))
-        print "$ip:"
-        print reg_set[self.pc_offset]
+        print("$ip:")
+        print(hex(reg_set[self.pc_offset]))
         for i in range(0, 18):
-            print reg_set[i]
+            print(hex(reg_set[i]))
         #find $ip in self.d dictionary
         if (self.d.has_key(reg_set[self.pc_offset])) :
-            print "addr value:"
-            print self.d[reg_set[self.pc_offset]]
-            print(self.c.ptrace(1, pid, reg_set[self.pc_offset], 0))
+            print("addr value:")
+            print(hex(self.d[reg_set[self.pc_offset]]))
+            print(hex(self.c.ptrace(1, pid, reg_set[self.pc_offset], 0)))
             #re-add latest breakpoint at address self.latest. It was cleared at the previous continue.
             if (self.latest > 0) :
                 if (self.d.has_key(self.latest)) :
