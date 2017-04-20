@@ -35,16 +35,13 @@ class dbg :
             self.pc_offset = 15
     
     def attach(self, pid) :
-        r=self.c.ptrace(16, pid, 0 ,0)
-        print(r)
+        r = self.c.ptrace(16, pid, 0, 0)
         if(r == -1):
             print get_errno()
-        r=self.c.waitpid(pid,0,0x40000000)
-        print(r)
+        r = self.c.waitpid(pid, 0, 0x40000000)
         if(r == -1):
             print get_errno()
-        r=self.c.ptrace(0x4200, pid, 0, 14)
-        print r
+        r = self.c.ptrace(0x4200, pid, 0, 14)
         if(r == -1):
             print get_errno()
     
