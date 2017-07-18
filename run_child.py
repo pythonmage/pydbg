@@ -26,9 +26,8 @@ def test():
 
 class Tests:
     def pre_run(self):
-        subprocess.
-
-
+        pass
+    
     def test_break(self):
         test()
         self.pid = int(subprocess.check_output(["/bin/sh","-c", "ps ax | grep nativeapp"]).split()[0])
@@ -38,6 +37,7 @@ class Tests:
         self.val1=c_ulong(self.d.c.ptrace(1,self.pid,self.addr1,0)).value
         self.d.setBreakpoint(self.pid, self.addr1,self.val1)
         self.d.c.ptrace(7,self.pid,0,0)
+        print(self.d.wait(self.pid))
         self.d.contbreaklog(self.pid)
     
     def test_twoBreakpointsAndContBreakLog(self):
@@ -51,8 +51,11 @@ class Tests:
         self.val2=c_ulong(self.d.c.ptrace(1,self.pid,self.addr2,0)).value
         self.d.setAllBreakpoints(self.pid, {self.addr1:self.val1,self.addr2:self.val2})
         self.d.c.ptrace(7,self.pid,0,0)
+        print(self.d.wait(self.pid))
         self.d.contbreaklog(self.pid)
+        print(self.d.wait(self.pid))
         self.d.contbreaklog(self.pid)
+        print(self.d.wait(self.pid))
         self.d.contbreaklog(self.pid)
         print("pass")
 

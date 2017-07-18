@@ -49,6 +49,7 @@ class dbg :
         print(self.c.ptrace(17, pid, 0, 0))
     
     def setBreakpoint(self, pid, address, wordAtAddress) :
+        self.d[address] = wordAtAddress
         if self.arch == "armv7":
             return self.c.ptrace(4,pid, address, (wordAtAddress & 0xffffffff00000000) | 0x00000000fedeffe7)
         else:
@@ -58,14 +59,16 @@ class dbg :
         self.c.ptrace(4,pid,address,self.d[address])
     
     def setAllBreakpoints(self, pid, di) :
-        self.d = di;
-        for k in self.d.keys() :
-            print(self.setBreakpoint(pid, k, self.d[k]))
+        for k in di.keys() :
+            print(self.setBreakpoint(pid, k, di[k]))
     
     def contbreaklog(self, pid) :
         #get reg_set
         reg_set = (c_long * 64)()
-        print(self.c.ptrace(12, pid, 0, addressof(reg_set)))
+        r = self.c.ptrace(12, pid, 0, addressof(reg_set))
+        if r == -1:
+            print r
+            print get_errno()
         print("$ip:")
         print(hex(reg_set[self.pc_offset]))
         for i in range(0, 18):
