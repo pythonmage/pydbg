@@ -72,10 +72,7 @@ class dbg :
             print get_errno()
         print("$ip:")
         print(hex(reg_set[self.pc_offset]))
-        for i in range(0, 18):
-            print(hex(reg_set[i]))
         #decrement $ip for x86 architectures
-        print "decrement $ip"
         if "x86" in self.arch or "x86_64" in self.arch or "i386" in self.arch:
             reg_set[self.pc_offset] = reg_set[self.pc_offset] - 1
         #find $ip in self.d dictionary
@@ -91,6 +88,7 @@ class dbg :
             #clear breakpoint and continue
             print "remove breakpoint text near $ip"
             print(self.c.ptrace(4,pid,reg_set[self.pc_offset],self.d[reg_set[self.pc_offset]]))
+            #update process registers in particular the $pc register
             print(self.c.ptrace(13,pid,0,addressof(reg_set)))
             self.latest = reg_set[self.pc_offset]
             print "continue"
