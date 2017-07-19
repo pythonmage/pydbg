@@ -28,7 +28,7 @@ class dbg :
         self.c.waitpid.argtypes=[c_long,c_long,c_long]
         self.d = {}
         self.latest = 0
-        self.arch="armv7"
+        self.arch="x86_64"
         self.pc_offset = 16
         if self.arch == "armv7":
             print("Arch is " + self.arch)
@@ -73,6 +73,10 @@ class dbg :
         print(hex(reg_set[self.pc_offset]))
         for i in range(0, 18):
             print(hex(reg_set[i]))
+        #decrement $ip for x86 architectures
+        print "decrement $ip"
+        if self.arch == "x86" or self.arch =="x86_64":
+            reg_set[self.pc_offset] = reg_set[self.pc_offset] - 1
         #find $ip in self.d dictionary
         if (self.d.has_key(reg_set[self.pc_offset])) :
             print("addr value:")
@@ -81,15 +85,11 @@ class dbg :
             #re-add latest breakpoint at address self.latest. It was cleared at the previous continue.
             if (self.latest > 0) :
                 if (self.d.has_key(self.latest)) :
-                    print "poke at latest val:"
-                    print (self.d[self.latest] & 0xffffffff00000000) | 0x00000000fedeffe7
-                    print(self.c.ptrace(4,pid,self.latest,(self.d[self.latest] & 0xffffffff00000000) | 0x00000000fedeffe7))
+                    print "poke at latest \nsuccess:"
+                    print(self.setBreakpoint(pid,self.latest,self.d[self.latest]))
             #clear breakpoint and continue
             print "remove breakpoint text near $ip"
             print(self.c.ptrace(4,pid,reg_set[self.pc_offset],self.d[reg_set[self.pc_offset]]))
-            print "decrement $ip"
-            if self.arch == "x86" or self.arch =="x86_64":
-                reg_set[self.pc_offset] = reg_set[self.pc_offset] - 1
             print(self.c.ptrace(13,pid,0,addressof(reg_set)))
             self.latest = reg_set[self.pc_offset]
             print "continue"
