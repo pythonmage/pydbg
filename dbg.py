@@ -18,6 +18,7 @@
 
 from ctypes import *
 import ctypes.util
+import platform
 
 class dbg :
     def __init__(self) :
@@ -28,10 +29,10 @@ class dbg :
         self.c.waitpid.argtypes=[c_long,c_long,c_long]
         self.d = {}
         self.latest = 0
-        self.arch="x86_64"
+        self.arch=platform.machine()
         self.pc_offset = 16
-        if self.arch == "armv7":
-            print("Arch is " + self.arch)
+        print("Arch is " + self.arch)
+        if "armv7" in self.arch:
             self.pc_offset = 15
     
     def attach(self, pid) :
@@ -50,7 +51,7 @@ class dbg :
     
     def setBreakpoint(self, pid, address, wordAtAddress) :
         self.d[address] = wordAtAddress
-        if self.arch == "armv7":
+        if "armv7" in self.arch:
             return self.c.ptrace(4,pid, address, (wordAtAddress & 0xffffffff00000000) | 0x00000000fedeffe7)
         else:
             return self.c.ptrace(4,pid, address, (wordAtAddress & 0xffffffffffffff00) | 0x00000000000000cc)
@@ -75,7 +76,7 @@ class dbg :
             print(hex(reg_set[i]))
         #decrement $ip for x86 architectures
         print "decrement $ip"
-        if self.arch == "x86" or self.arch =="x86_64":
+        if "x86" in self.arch or "x86_64" in self.arch or "i386" in self.arch:
             reg_set[self.pc_offset] = reg_set[self.pc_offset] - 1
         #find $ip in self.d dictionary
         if (self.d.has_key(reg_set[self.pc_offset])) :
